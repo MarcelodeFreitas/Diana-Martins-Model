@@ -120,6 +120,13 @@ clf.fit(X_train,train.ravel(),
 y_predict = clf.predict(X_test)
 y_train_predict = clf.predict(X_train)
 
+#save model
+clf.save_model("model.json")
+
+#load model
+model = XGBClassifier()
+model.load_model("model.json")
+
 os.makedirs('./classical_timestamps', exist_ok=True) #wont raise OSError if directory already exists
 
 audio = AudioSegment.from_wav(audio_file)
@@ -208,7 +215,7 @@ def print_series_prediction_3(sound, label):
     third_preds = []
     third_percent = []
     for i in range(len(sound)): #para imprimir tabela de previsoes
-        predictions = clf.predict_proba(sound)
+        predictions = model.predict_proba(sound)
         predic = largest_indices(predictions[i], 3)
         percentage = predictions[i][predic]
         
