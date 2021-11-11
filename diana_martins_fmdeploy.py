@@ -11,8 +11,8 @@ import logging
 
 model=""
 
-def create_timestamps(input_audio_path):
-    os.makedirs('./timestamps', exist_ok=True)
+def create_timestamps(input_audio_path, output_directory_path):
+    os.makedirs(output_directory_path + 'timestamps', exist_ok=True)
     audio_file= input_audio_path
     audio = AudioSegment.from_wav(audio_file)
     list_of_timestamps = [5, 10, 15, 20, 25, 30] #and so on in *seconds*
@@ -26,7 +26,7 @@ def create_timestamps(input_audio_path):
         end = t * 1000 #pydub works in millisec
         """ print("split at [ {}:{}] ms".format(start, end)) """
         audio_chunk=audio[start:end]
-        audio_chunk.export( "./timestamps/timestamp_{}.wav".format(end), format="wav") 
+        audio_chunk.export( output_directory_path + "timestamps/timestamp_{}.wav".format(end), format="wav") 
 
         start = end  #pydub works in millisec
 
@@ -38,29 +38,26 @@ def create_csv_header():
     return header
 
 def generate_csv_music(csv_header, PATH_TIMESTAMPS, path_csv, file_ext='*.wav'):
-    if os.path.exists(path_csv):
-        print(f'CSV {path_csv} already exists')
-    else:
-        sound_cases=[]
-        for fn in glob.glob(os.path.join(PATH_TIMESTAMPS, file_ext)): #classical music
-            filename = fn.split('\\')[1]
-            label = 3
-            sound_data=[filename]
-            sound_data.append(label)
-            sound = f'{PATH_TIMESTAMPS}/{filename}'
-            X, sr = librosa.load(sound)
-            stft = np.abs(librosa.stft(X))
-            sound_data.append(np.mean(librosa.feature.chroma_stft(S=stft, sr=sr)))
-            sound_data.append(np.mean(librosa.feature.melspectrogram(X, sr=sr)))
-            sound_data.append(np.mean(librosa.feature.spectral_contrast(S=stft, sr=sr)))
-            sound_data.append(np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(X), sr=sr)))
-            mfcc = librosa.feature.mfcc(y=X, sr=sr, n_mfcc=40)
-            for e in mfcc:
-                sound_data.append(np.mean(e))
-            sound_cases.append(sound_data)
-                
-        df = pd.DataFrame(sound_cases, columns = csv_header) 
-        df.to_csv(path_csv)
+    sound_cases=[]
+    for fn in glob.glob(os.path.join(PATH_TIMESTAMPS, file_ext)): #classical music
+        filename = fn.split('\\')[1]
+        label = 3
+        sound_data=[filename]
+        sound_data.append(label)
+        sound = f'{PATH_TIMESTAMPS}/{filename}'
+        X, sr = librosa.load(sound)
+        stft = np.abs(librosa.stft(X))
+        sound_data.append(np.mean(librosa.feature.chroma_stft(S=stft, sr=sr)))
+        sound_data.append(np.mean(librosa.feature.melspectrogram(X, sr=sr)))
+        sound_data.append(np.mean(librosa.feature.spectral_contrast(S=stft, sr=sr)))
+        sound_data.append(np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(X), sr=sr)))
+        mfcc = librosa.feature.mfcc(y=X, sr=sr, n_mfcc=40)
+        for e in mfcc:
+            sound_data.append(np.mean(e))
+        sound_cases.append(sound_data)
+            
+    df = pd.DataFrame(sound_cases, columns = csv_header) 
+    df.to_csv(path_csv)
         
 def load_data(data):  
     X_TEST = data.drop([data.columns[0],'filename', 'label'],axis=1)#droping first column, filename column and label column 
@@ -80,7 +77,7 @@ def truncate(n, decimals=0):
     multiplier = 10 ** decimals
     return int(n * multiplier) / multiplier
 
-def series_prediction_3(output_file_name, sound, label):
+def series_prediction_3(output_file_name, output_directory_path, sound, label):
     sounds = []
     audio = []
     first_preds = []
@@ -129,10 +126,12 @@ def series_prediction_3(output_file_name, sound, label):
                fill=dict(color=['lightgrey', 'white']),
                align='center'))])
 
-    fig.show()
-    fig.write_image(output_file_name + ".png")
+    """ fig.show() """
+    fig.write_image(output_directory_path + output_file_name + ".png")
     
-    print('Mean of timestamps:', mean_first)
+    df.to_csv(output_directory_path + output_file_name + ".csv")
+    
+    """ print('Mean of timestamps:', mean_first) """
     
     return df
 
@@ -150,13 +149,13 @@ def load_models(modelpaths):
 
 def run(input_file_path, output_file_name, output_directory_path):
     try:
-        create_timestamps(input_file_path)
+        create_timestamps(input_file_path, output_directory_path)
         csv_header = create_csv_header()
-        PATH_CSV_TIMESTAMPS = './features_timestamps.csv' #output csv file name
-        PATH_TIMESTAMPS = './timestamps'
+        PATH_CSV_TIMESTAMPS = output_directory_path + 'features_timestamps.csv' #output csv file name
+        PATH_TIMESTAMPS = output_directory_path + 'timestamps'
         generate_csv_music(csv_header, PATH_TIMESTAMPS, PATH_CSV_TIMESTAMPS)
         DATA_3=pd.read_csv(PATH_CSV_TIMESTAMPS)
         (X_TEST,Y_TEST) = load_data(DATA_3)
-        series_prediction_3(X_TEST, Y_TEST, output_file_name)
+        series_prediction_3(output_file_name, output_directory_path, X_TEST, Y_TEST)
     except:
         logging.exception("run: ")
