@@ -7,6 +7,7 @@ import librosa
 import plotly.graph_objs as go
 from xgboost.sklearn import XGBClassifier
 from pydub import AudioSegment
+from pydub.utils import make_chunks
 import logging
 
 def create_timestamps(input_audio_path, output_directory_path):
@@ -14,17 +15,23 @@ def create_timestamps(input_audio_path, output_directory_path):
         os.makedirs(output_directory_path + 'timestamps', exist_ok=True)
         audio_file= input_audio_path
         audio = AudioSegment.from_wav(audio_file)
-        list_of_timestamps = [5, 10, 15, 20, 25, 30] #and so on in *seconds*
+        chunk_length_ms = 5000 # pydub calculates in millisec
+        chunks = make_chunks(audio, chunk_length_ms) # make chunks of 5s
+        # export all of the individual chunks as wav files
+        for i,chunk in enumerate(chunks):
+            chunk_name = output_directory_path + "timestamps/chunk{0}.wav".format(i)
+            chunk.export(chunk_name, format="wav")
+        
+        """ list_of_timestamps = [5, 10, 15, 20, 25, 30] #and so on in *seconds*
         start = 0
         for  idx,t in enumerate(list_of_timestamps):
             #break loop if at last element of list
             if idx == len(list_of_timestamps):
                 break
             end = t * 1000 #pydub works in millisec
-            """ print("split at [ {}:{}] ms".format(start, end)) """
             audio_chunk=audio[start:end]
             audio_chunk.export( output_directory_path + "timestamps/timestamp_{}.wav".format(end), format="wav") 
-            start = end  #pydub works in millisec
+            start = end  #pydub works in millisec """
     except: 
         logging.exception("create_timestamps: ")
 
@@ -129,14 +136,11 @@ def series_prediction(model, output_file_name, output_directory_path, sound, lab
         
         df = pd.DataFrame(data)
         fig = go.Figure(data=[go.Table(
-        header=dict(values=list(df.columns),
-                    fill_color='lavender',
-                    align='center'),
-        cells=dict(values=[df.Y_test, df.first_pred, df.first_percent, df.second_pred, # df.Sound,df.mean_first,df.mean_second,df.mean_third
-                        df.second_percent, df.third_pred, df.third_percent],
-                #fill_color='lightgrey',
-                fill=dict(color=['lightgrey', 'white']),
-                align='center'))])
+            header=dict(values=list(df.columns)),
+            cells=dict(values=[df.Y_test, df.first_pred, df.first_percent, df.second_pred, # df.Sound,df.mean_first,df.mean_second,df.mean_third
+                            df.second_percent, df.third_pred, df.third_percent],
+                    )
+        )])
         """ fig.show() """
         fig.write_image(output_directory_path + output_file_name + ".png")
         df.to_csv(output_directory_path + output_file_name + ".csv")
@@ -168,7 +172,7 @@ def load_models(modelpaths):
 
 def run(input_file_path, output_file_name, output_directory_path):
     try:
-        input_validation(input_file_path)
+        """ input_validation(input_file_path) """
         create_timestamps(input_file_path, output_directory_path)
         csv_header = create_csv_header()
         PATH_CSV_TIMESTAMPS = output_directory_path + 'features_timestamps.csv' #output csv file name
