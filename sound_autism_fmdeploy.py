@@ -21,17 +21,6 @@ def create_timestamps(input_audio_path, output_directory_path):
         for i,chunk in enumerate(chunks):
             chunk_name = output_directory_path + "timestamps/chunk{0}.wav".format(i)
             chunk.export(chunk_name, format="wav")
-        
-        """ list_of_timestamps = [5, 10, 15, 20, 25, 30] #and so on in *seconds*
-        start = 0
-        for  idx,t in enumerate(list_of_timestamps):
-            #break loop if at last element of list
-            if idx == len(list_of_timestamps):
-                break
-            end = t * 1000 #pydub works in millisec
-            audio_chunk=audio[start:end]
-            audio_chunk.export( output_directory_path + "timestamps/timestamp_{}.wav".format(end), format="wav") 
-            start = end  #pydub works in millisec """
     except: 
         logging.exception("create_timestamps: ")
 
@@ -151,8 +140,7 @@ def series_prediction(model, output_file_name, output_directory_path, sound, lab
 def input_validation(input_file_path):
     try:
         if (input_file_path.lower().endswith(('.wav'))):
-            if (librosa.get_duration(filename=input_file_path) > 30):
-                raise ValueError('file size error: file max size 30s')
+            logging.debug('file is .wav')
         else:
             raise ValueError('file extension error: file must be .wav')
     except Exception as e:
@@ -172,7 +160,7 @@ def load_models(modelpaths):
 
 def run(input_file_path, output_file_name, output_directory_path):
     try:
-        """ input_validation(input_file_path) """
+        input_validation(input_file_path)
         create_timestamps(input_file_path, output_directory_path)
         csv_header = create_csv_header()
         PATH_CSV_TIMESTAMPS = output_directory_path + 'features_timestamps.csv' #output csv file name
