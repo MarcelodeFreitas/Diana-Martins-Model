@@ -9,9 +9,7 @@ The purpose of this adaptation is to integrate the original model with FMdeploy,
 
 Please refer to the original dissertation for more details on the model and its implementation.
 
-
-
-
+## Original instructions
 1 - O input são sons no formato .wav
 
 2 - No passo seguinte, o ficheiro de som é dividido em timestamps de 5 segundos.
